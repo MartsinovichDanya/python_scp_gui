@@ -1,7 +1,11 @@
 import sys
+import json
+from os.path import exists
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 from python_scp_gui import Ui_mainWindow
 from pathlib import Path
+from paramiko import SSHClient, AutoAddPolicy
+from scp import SCPClient
 
 
 class MainWidget(Ui_mainWindow, QMainWindow):
@@ -13,6 +17,14 @@ class MainWidget(Ui_mainWindow, QMainWindow):
         self.chooseLocalButton.clicked.connect(self.open_local)
 
         self.portEdit.setValue(22)
+
+        if exists('default_creds.json'):
+            with open('default_creds.json', 'r') as f:
+                ssh_creds = json.loads(f.read())
+            self.hostEdit.setText(ssh_creds['hostname'])
+            self.portEdit.setValue(ssh_creds['port'])
+            self.usernameEdit.setText(ssh_creds['username'])
+            self.passEdit.setText(ssh_creds['password'])
 
     def open_local(self):
         if self.isDirButton.isChecked():
@@ -33,29 +45,53 @@ class MainWidget(Ui_mainWindow, QMainWindow):
         return dir_name
 
     def copy(self):
-        pass
+        ssh_creds = {
+            'hostname': self.hostEdit.text(),
+            'username': self.usernameEdit.text(),
+            'password': self.passEdit.text(),
+            'port': self.portEdit.value()
+        }
+
+        paths = {
+            'local': self.localPathEdit.text(),
+            'remote': self.remotePathEdit.text()
+        }
+
+        if '' in ssh_creds.values() or '' in paths.values():
+            self.message('warning', 'All fields must be filled!')
+            return None
+
+        try:
+            ssh = SSHClient()
+            ssh.load_system_host_keys()
+            ssh.set_missing_host_key_policy(AutoAddPolicy())
+            ssh.connect(**ssh_creds)
+
+            scp = SCPClient(ssh.get_transport())
+
+            if self.isDirButton.isChecked():
+                scp.put(paths['local'], remote_path=paths['remote'], recursive=True)
+            else:
+                scp.put(paths['local'], remote_path=paths['remote'])
+
+            ssh.close()
+
+            self.message('info', 'Done!')
+        except Exception as e:
+            self.message('error', str(e))
 
     def save_default_conf(self):
-        pass
+        ssh_creds = {
+            'hostname': self.hostEdit.text(),
+            'username': self.usernameEdit.text(),
+            'password': self.passEdit.text(),
+            'port': self.portEdit.value()
+        }
 
-    def run(self):
-        self.progressBar.setMinimum(0)
-        self.progressBar.setValue(0)
-        if self.template and self.data_file and self.letters_dir:
-            try:
-                for step in do_things(self.template, self.data_file, self.letters_dir):
-                    if step == 'convert':
-                        self.message('info', 'Идет конвертация файлов в pdf.\nПожалуйста, подождите.')
-                        self.progressBar.hide()
-                    else:
-                        self.progressBar.setMaximum(step[1])
-                        self.progressBar.setValue(step[0])
-            except Exception as e:
-                self.message('error', str(e))
-            else:
-                self.message('info', 'Письма сгенерированы успешно!')
-        else:
-            self.message('warning', 'Вы заполнили не все поля.')
+        with open('default_creds.json', 'w') as f:
+            f.write(json.dumps(ssh_creds))
+
+        self.message('info', 'Saved!')
 
     @staticmethod
     def message(status, text):

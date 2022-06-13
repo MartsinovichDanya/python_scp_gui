@@ -58,6 +58,7 @@ class Ui_mainWindow(object):
         self.hostEdit.setObjectName("hostEdit")
         self.gridLayout.addWidget(self.hostEdit, 0, 1, 1, 1)
         self.passEdit = QtWidgets.QLineEdit(self.gridLayoutWidget)
+        self.passEdit.setEchoMode(QtWidgets.QLineEdit.Password)
         self.passEdit.setObjectName("passEdit")
         self.gridLayout.addWidget(self.passEdit, 3, 1, 1, 1)
         self.label_4 = QtWidgets.QLabel(self.gridLayoutWidget)
