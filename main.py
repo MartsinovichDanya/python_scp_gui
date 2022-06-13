@@ -3,8 +3,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 from python_scp_gui import Ui_mainWindow
 from pathlib import Path
 
-HOME = str(Path.home())
-
 
 class MainWidget(Ui_mainWindow, QMainWindow):
     def __init__(self):
@@ -14,20 +12,31 @@ class MainWidget(Ui_mainWindow, QMainWindow):
         self.saveDefaultButton.clicked.connect(self.save_default_conf)
         self.chooseLocalButton.clicked.connect(self.open_local)
 
-    def open_template(self):
-        fname = QFileDialog.getOpenFileName(ex, 'Open template file', HOME, filter='Word files (*.docx)')
-        self.lineEdit_getTemplate.setText(fname[0])
-        self.template = self.lineEdit_getTemplate.text()
+        self.portEdit.setValue(22)
 
-    def open_data(self):
-        fname = QFileDialog.getOpenFileName(ex, 'Open data file', HOME, filter='Excel files (*.xlsx)')
-        self.lineEdit_getData.setText(fname[0])
-        self.data_file = self.lineEdit_getData.text()
+    def open_local(self):
+        if self.isDirButton.isChecked():
+            path = self.open_local_dir()
+        else:
+            path = self.open_local_file()
 
-    def open_dir(self):
-        dir_name = QFileDialog.getExistingDirectory(ex, 'Choose folder', HOME)
-        self.lineEdit_chooseDir.setText(dir_name)
-        self.letters_dir = self.lineEdit_chooseDir.text()
+        self.localPathEdit.setText(path)
+
+    @staticmethod
+    def open_local_file():
+        fname = QFileDialog.getOpenFileName(ex, 'Choose local file', str(Path.home()))
+        return fname[0]
+
+    @staticmethod
+    def open_local_dir():
+        dir_name = QFileDialog.getExistingDirectory(ex, 'Choose local dir', str(Path.home()))
+        return dir_name
+
+    def copy(self):
+        pass
+
+    def save_default_conf(self):
+        pass
 
     def run(self):
         self.progressBar.setMinimum(0)
