@@ -15,8 +15,10 @@ class MainWidget(Ui_mainWindow, QMainWindow):
         self.copyButton.clicked.connect(self.copy)
         self.saveDefaultButton.clicked.connect(self.save_default_conf)
         self.chooseLocalButton.clicked.connect(self.open_local)
+        self.changeDirectionButton.clicked.connect(self.change_direction)
 
         self.portEdit.setValue(22)
+        self.reversed_direction = False  # False - from local to remote      True - from remote to local
 
         if exists('default_creds.json'):
             with open('default_creds.json', 'r') as f:
@@ -26,8 +28,17 @@ class MainWidget(Ui_mainWindow, QMainWindow):
             self.usernameEdit.setText(ssh_creds['username'])
             self.passEdit.setText(ssh_creds['password'])
 
+    def change_direction(self):
+        if self.reversed_direction:
+            self.src_label.setText('Local')
+            self.dst_label.setText('Remote')
+        else:
+            self.src_label.setText('Remote')
+            self.dst_label.setText('Local')
+        self.reversed_direction = not self.reversed_direction
+
     def open_local(self):
-        if self.isDirButton.isChecked():
+        if self.isDirButton.isChecked() or self.reversed_direction:
             path = self.open_local_dir()
         else:
             path = self.open_local_file()
@@ -69,10 +80,17 @@ class MainWidget(Ui_mainWindow, QMainWindow):
 
             scp = SCPClient(ssh.get_transport())
 
-            if self.isDirButton.isChecked():
-                scp.put(paths['local'], remote_path=paths['remote'], recursive=True)
+            if not self.reversed_direction:
+                if self.isDirButton.isChecked():
+                    scp.put(paths['local'], remote_path=paths['remote'], recursive=True)
+                else:
+                    scp.put(paths['local'], remote_path=paths['remote'])
+
             else:
-                scp.put(paths['local'], remote_path=paths['remote'])
+                if self.isDirButton.isChecked():
+                    scp.get(remote_path=paths['remote'], local_path=paths['local'], recursive=True)
+                else:
+                    scp.get(remote_path=paths['remote'], local_path=paths['local'])
 
             ssh.close()
 
