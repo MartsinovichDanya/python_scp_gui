@@ -37,22 +37,43 @@ class MainWidget(Ui_mainWindow, QMainWindow):
             self.dst_label.setText('Local')
         self.reversed_direction = not self.reversed_direction
 
+    def view_remote_dir(self):
+        ssh_creds = {
+            'hostname': self.hostEdit.text(),
+            'username': self.usernameEdit.text(),
+            'password': self.passEdit.text(),
+            'port': self.portEdit.value()
+        }
+
+        ssh = SSHClient()
+        ssh.load_system_host_keys()
+        ssh.set_missing_host_key_policy(AutoAddPolicy())
+        ssh.connect(**ssh_creds)
+
+        stdin, stdout, stderr = ssh.exec_command('ls ~')
+
+        remote_paths = [el.strip() for el in stdout.read().decode().split('\n') if el != '']
+
+        print(*remote_paths, sep='\n')
+
     def open_local(self):
+        current_path = self.localPathEdit.text()
+        default_path = str(Path(current_path).parent) if current_path != '' else str(Path.home())
         if self.isDirButton.isChecked() or self.reversed_direction:
-            path = self.open_local_dir()
+            path = self.open_local_dir(default_path)
         else:
-            path = self.open_local_file()
+            path = self.open_local_file(default_path)
 
         self.localPathEdit.setText(path)
 
     @staticmethod
-    def open_local_file():
-        fname = QFileDialog.getOpenFileName(ex, 'Choose local file', str(Path.home()))
+    def open_local_file(default_path):
+        fname = QFileDialog.getOpenFileName(ex, 'Choose local file', default_path)
         return fname[0]
 
     @staticmethod
-    def open_local_dir():
-        dir_name = QFileDialog.getExistingDirectory(ex, 'Choose local dir', str(Path.home()))
+    def open_local_dir(default_path):
+        dir_name = QFileDialog.getExistingDirectory(ex, 'Choose local dir', default_path)
         return dir_name
 
     def copy(self):
