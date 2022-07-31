@@ -1,7 +1,8 @@
 import sys
 import json
 from os.path import exists
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QFileSystemModel
+from PyQt5 import QtCore
 from python_scp_gui import Ui_mainWindow
 from pathlib import Path
 from paramiko import SSHClient, AutoAddPolicy
@@ -14,7 +15,7 @@ class MainWidget(Ui_mainWindow, QMainWindow):
         self.setupUi(self)
         self.copyButton.clicked.connect(self.copy)
         self.saveDefaultButton.clicked.connect(self.save_default_conf)
-        self.chooseLocalButton.clicked.connect(self.open_local)
+        # self.chooseLocalButton.clicked.connect(self.open_local)
         self.changeDirectionButton.clicked.connect(self.change_direction)
 
         self.portEdit.setValue(22)
@@ -27,6 +28,10 @@ class MainWidget(Ui_mainWindow, QMainWindow):
             self.portEdit.setValue(ssh_creds['port'])
             self.usernameEdit.setText(ssh_creds['username'])
             self.passEdit.setText(ssh_creds['password'])
+
+        model = QFileSystemModel()
+        model.setRootPath(QtCore.QDir.currentPath())
+        self.localFs.setModel(model)
 
     def change_direction(self):
         if self.reversed_direction:
